@@ -1,8 +1,9 @@
-import cohere, json, webbrowser, string, subprocess, random, keyboard, threading, winreg, datetime, customtkinter as ctk
+import customtkinter as ctk
 from PIL import Image
+import cohere, json, webbrowser, string, subprocess, random, keyboard, threading, os
 
 def lb_gen_password(length):
-    alphabet = " !#$%&'()*+,-./:;<=>?@[]^_`{|}~" + string.ascii_letters + string.digits
+    alphabet = " !#$%&'()*+,-./:;<=>?@[]^_`{|}~\\" + string.ascii_letters + string.digits
     pwd = ""
     i = 0
     while i < int(length):
@@ -10,7 +11,7 @@ def lb_gen_password(length):
         i = i + 1
     return pwd
 def lb_vigenere(message, key, direction=1):
-    alphabet = " !#$%&'()*+,-./:;<=>?@[]^_`{|}~" + string.ascii_letters + string.digits
+    alphabet = " !#$%&'()*+,-./:;<=>?@[]^_`{|}~\\" + string.ascii_letters + string.digits
     key_index = 0
     encrypted_message = ''
     for char in message:
@@ -28,7 +29,7 @@ def lb_encrypt(message, key):
 def lb_autocomplete(search, key):
     possible_search = []
     for i in key_words:
-        if i['name'][:len(search)] == search:
+        if i["name"][:len(search)] == search:
             possible_search.append(i)
     if len(possible_search) != 0 and search != "":
         label_autocomplete.configure(text=possible_search[0]["name"][len(search):])
@@ -54,8 +55,8 @@ def lb_autocomplete(search, key):
                     lb_to_website(request, i)
                 elif i["type"] == "AI":
                     lb_cohere_request(request)
-                elif i['type'] == 'Software':
-                    lb_to_software(request, i)
+                elif i["type"] == "Software":
+                    lb_to_software(i)
                 found_command = True
         if not found_command:
             found_command = True
@@ -64,16 +65,6 @@ def lb_autocomplete(search, key):
             i.pack_forget()
             i.pack(fill="x", pady=10)
         to_do_request.set(command + " ")
-def lb_to_software(request, e):
-    global programs
-    separator = ' '
-    request = separator.join(request)
-    for i in range(len(programs[0])):
-        if programs[0][i].lower() == request:
-            lb_send_log(e, f"   Open \"{request}\" at {datetime.datetime.now().strftime("%H:%M:%S the %d/%m/%y")}")
-            subprocess.Popen(programs[1][i])
-            return
-    PopUp(root, "Error", "350x100", f"\"{request}\" is not a software installed on your computer", color_index)
 def lb_cohere_request(request):
     separator = " "
     request = separator.join(request)
@@ -86,10 +77,19 @@ def lb_cohere_request(request):
         console_response.insert("0.0", "ERROR")
     console_response.configure(state="disabled")
 def lb_to_website(request, e):
-    lb_send_log(e, f"   Search \"{" ".join(request)}\" on {e["name"]} ({e["adress"]}) at {datetime.datetime.now().strftime("%H:%M:%S the %d/%m/%y")}")
+    lb_send_log(e, f"   Search \"{" ".join(request)}\" on {e["name"]} ({e["adress"]})")
     separator = "+"
     request = separator.join(request)
     webbrowser.open(f"https://www.{e["adress"]}/{e["search_query"] + request}")
+def lb_to_software(e):
+    lb_send_log(e, f"   Execute \"{e["name"]}\"")
+    try:
+        subprocess.Popen([e["path"]])
+    except:
+        try:
+            os.startfile(e["path"])
+        except:
+            PopUp(root, "Error", "200x100", "Wrong path to executable file", color_index)
 def lb_send_log(e, message):
     try:
         image = Image.open(e["icon"])
@@ -116,14 +116,51 @@ def lb_reset_colors(possible_search):
     adress_label.configure(fg_color=colors[color_index]["fg_color"])
     query_add_action.configure(fg_color=colors[color_index]["fg_color"], text_color=colors[color_index]["color_text_input"], border_color=colors[color_index]["border_color"])
     query_label.configure(fg_color=colors[color_index]["fg_color"])
+    path_add_action.configure(fg_color=colors[color_index]["fg_color"], text_color=colors[color_index]["color_text_input"], border_color=colors[color_index]["border_color"])
+    path_label.configure(fg_color=colors[color_index]["fg_color"])
     button_add_action.configure(fg_color=colors[color_index]["fg_color"], text_color=colors[color_index]["color_text_input"], border_color=colors[color_index]["border_color"], hover_color=colors[color_index]["hover"])
     label_remove_action.configure(fg_color=colors[color_index]["hover"], text_color=colors[color_index]["color_text_input"])
     num_remove_action.configure(fg_color=colors[color_index]["fg_color"], border_color=colors[color_index]["border_color"])
     num_label.configure(fg_color=colors[color_index]["fg_color"])
     button_remove_action.configure(fg_color=colors[color_index]["fg_color"], text_color=colors[color_index]["color_text_input"], border_color=colors[color_index]["border_color"], hover_color=colors[color_index]["hover"])
+def lb_handle_type_action(value):
+    combo_add_action.pack_forget()
+    color_add_action.pack_forget()
+    button_add_action.pack_forget()
+    label_remove_action.pack_forget()
+    num_remove_action.pack_forget()
+    num_label.place(x=1000, y=1000)
+    info_remove_action.pack_forget()
+    button_remove_action.pack_forget()
+    if value == "Website":
+        adress_add_action.pack(pady=5)
+        query_add_action.pack(pady=5)
+        adress_label.place(x=269, y=133)
+        query_label.place(x=269, y=171)
+        path_add_action.pack_forget()
+        path_label.place(x=1000, y=1000)
+        num_label.place(x=269, y=406)
+    else:
+        adress_add_action.pack_forget()
+        query_add_action.pack_forget()
+        path_add_action.pack(pady=5)
+        adress_label.place(x=1000, y=1000)
+        query_label.place(x=1000, y=1000)
+        path_label.place(x=269, y=133)
+        num_label.place(x=269, y=369)
+    combo_add_action.pack(pady=5)
+    color_add_action.pack(pady=5)
+    button_add_action.pack(pady=15)
+    label_remove_action.pack(pady=10)
+    num_remove_action.pack(pady=20)
+    info_remove_action.pack()
+    button_remove_action.pack(pady=10)
 def lb_show_placeholder(value, text, label, x, y):
     if text == 'Num':
-        x, y = 269, 406
+        if combo_add_action.get() == 'Software':
+            x, y = 269, 369
+        else:
+            x, y = 269, 406
     if value.get() == "":
         label.configure(text=text, font=("Monospace", 15))
         label.place(x=x, y=y)
@@ -138,14 +175,22 @@ def lb_add_new_action():
             index = i
     if combo_add_action.get() == "Website":
         if name_new_action.get() != "" and adress_new_action.get() != "" and query_new_action.get() != "":
-            key_words.append({"name": name_new_action.get(), "type": combo_add_action.get(), "index_color": index, "adress": adress_new_action.get(), "search_query": query_new_action.get(), "icon": icon_add_action.get()})
+            key_words.append({"name": name_new_action.get(), "type": combo_add_action.get(), "index_color": index, "adress": adress_new_action.get(), "search_query": query_new_action.get(), "icon": icon_add_action.get(), "path": ""})
             adress_new_action.set("")
             query_new_action.set("")
-            lb_show_placeholder(adress_new_action, "Adress", adress_label, 269, 133)
-            lb_show_placeholder(query_new_action, "Search query", query_label, 269, 171)
+            lb_show_placeholder(adress_new_action, "Adress", adress_label, 250, 133)
+            lb_show_placeholder(query_new_action, "Search query", query_label, 250, 171)
         else:
             PopUp(root, "Error", "200x100", "Missing arguments", color_index)
             return
+    elif combo_add_action.get() == "Software":
+        if name_new_action.get() != "" and path_add_action.get() != "":
+            key_words.append({"name": name_new_action.get(), "type": combo_add_action.get(), "index_color": index, "adress": "", "search_query": "", "icon": icon_add_action.get(), "path": path_add_action.get()})
+        else:
+            PopUp(root, "Error", "200x100", "Missing arguments", color_index)
+            return
+        path_new_action.set("")
+        lb_show_placeholder(path_new_action, "Path's file", path_label, 250, 133)
     with open("./assets/json/command_info.json", "w", encoding="utf-8") as data:
         data.write(lb_encrypt(f'{key_words}', encrypt_key))
     info_remove_action.configure(text=lb_refresh_command())
@@ -153,7 +198,9 @@ def lb_add_new_action():
     icon_new_action.set("")
     lb_show_placeholder(name_new_action, "Command's name", name_label, 269, 58)
     lb_show_placeholder(icon_new_action, "Icon's path", icon_label, 269, 95)
+    combo_add_action.set("Software")
     color_add_action.set("Red")
+    lb_handle_type_action("Software")
 def lb_new_key(data):
     data["DECRYPT"] = lb_gen_password(random.randint(100, 150))
     with open("./assets/json/env_var.json", "w", encoding="utf-8") as sens:
@@ -185,46 +232,6 @@ def lb_remove_action():
             PopUp(root, "Error", "200x100", "Invalid argument", color_index)
     else:
         PopUp(root, "Error", "200x100", "Missing argument", color_index)
-def lb_get_software():
-    programs_name, programs_path = [], []
-    registry_paths = [
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
-        (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
-        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
-    ]
-    for root, path in registry_paths:
-        try:
-            with winreg.OpenKey(root, path) as key:
-                for i in range(winreg.QueryInfoKey(key)[0]):
-                    try:
-                        subkey_name = winreg.EnumKey(key, i)
-                        with winreg.OpenKey(key, subkey_name) as subkey:
-                            name = winreg.QueryValueEx(subkey, "DisplayName")[0]
-                            exe = None
-                            try:
-                                exe = winreg.QueryValueEx(subkey, "DisplayIcon")[0]
-                            except:
-                                try:
-                                    uninstall_str = winreg.QueryValueEx(subkey, "UninstallString")[0]
-                                    if uninstall_str.endswith(".exe"):
-                                        exe = uninstall_str
-                                except:
-                                    continue
-                            try:
-                                if exe[-2:] == ',0':
-                                    exe = exe[:-2]
-                                if exe != None and exe[-4:] == '.exe':
-                                    programs_name.append(name)
-                                    programs_path.append(exe)
-                                else:
-                                    continue
-                            except:
-                                continue
-                    except:
-                        continue
-        except:
-            continue
-    return (programs_name, programs_path)
 
 class App(ctk.CTk):
     def __init__(self, title, dimension):
@@ -277,7 +284,6 @@ co = cohere.Client(config_env["KEY_API"])
 colors = [{"name": "Red", "fg_color": "#2E1A1A", "border_color": "#C91616", "color_text_input": "#ffffff", "hover": "#7C1818"}, {"name": "Orange", "fg_color": "#2E221A", "border_color": "#C95516", "color_text_input": "#ffffff", "hover": "#7C3C18"}, {"name": "Yellow", "fg_color": "#2E2B1A", "border_color": "#C9AF16", "color_text_input": "#ffffff", "hover": "#7C6D18"}, {"name": "Green", "fg_color": "#1B2E1A", "border_color": "#1FC916", "color_text_input": "#ffffff", "hover": "#1D7C18"}, {"name": "Cyan", "fg_color": "#1A2E2C", "border_color": "#16C9BB", "color_text_input": "#ffffff", "hover": "#187C74"}, {"name": "Blue", "fg_color": "#1C1A2E", "border_color": "#2516C9", "color_text_input": "#ffffff", "hover": "#21187C"}, {"name": "Purple", "fg_color": "#2A1A2E", "border_color": "#7316C9", "color_text_input": "#ffffff", "hover": "#4F187C"}, {"name": "Pink", "fg_color": "#2E1A29", "border_color": "#C916A3", "color_text_input": "#ffffff", "hover": "#7C1866"}, {"name": "Dark pink", "fg_color": "#2E1A1F", "border_color": "#C9164C", "color_text_input": "#ffffff", "hover": "#7C1836"}, {"name": "White", "fg_color": "#BEBEBE", "border_color": "#ffffff", "color_text_input": "#000000", "hover": "#DFDFDF"}, {"name": "Black", "fg_color": "#000000", "border_color": "#3C3C3C", "color_text_input": "#ffffff", "hover": "#1E1E1E"}]
 possible_search = []
 console_element_list = []
-programs = lb_get_software()
 color_index = len(colors) - 1
 
 root = App("Raycast", "800x340")
@@ -291,6 +297,7 @@ name_new_action = ctk.StringVar()
 icon_new_action = ctk.StringVar()
 adress_new_action = ctk.StringVar()
 query_new_action = ctk.StringVar()
+path_new_action = ctk.StringVar()
 num_delete_action = ctk.StringVar()
 
 to_do = ctk.CTkEntry(tabs.tab("Console"), width=500, textvariable=to_do_request, placeholder_text="Enter a command", fg_color="#000000", border_color="#3C3C3C", text_color="white", font=("Monospace", 18))
@@ -307,19 +314,22 @@ name_add_action = ctk.CTkEntry(back_grounder, fg_color="#000000", text_color="#f
 name_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Command's name", font=("Monospace", 15))
 icon_add_action = ctk.CTkEntry(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", width=200, textvariable=icon_new_action, placeholder_text="Icon's path", font=("Monospace", 18))
 icon_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Icon's path", font=("Monospace", 15))
-combo_add_action = ctk.CTkComboBox(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", button_color="#000000", dropdown_fg_color="#000000", dropdown_hover_color="#1E1E1E", dropdown_text_color="#ffffff", values=["Website"], state="readonly", font=("Monospace", 18))
-combo_add_action.set("Website")
+combo_add_action = ctk.CTkComboBox(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", button_color="#000000", dropdown_fg_color="#000000", dropdown_hover_color="#1E1E1E", dropdown_text_color="#ffffff", values=["Software", "Website"], state="readonly", font=("Monospace", 18), command=lambda value: lb_handle_type_action(value))
+combo_add_action.set("Software")
 color_add_action = ctk.CTkComboBox(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", button_color="#000000", dropdown_fg_color="#000000", dropdown_hover_color="#1E1E1E", dropdown_text_color="#ffffff", values=["Red", "Orange", "Yellow", "Green", "Cyan", "Blue", "Purple", "Pink", "Dark pink", "White", "Black"], font=("Monospace", 18), state="readonly")
 color_add_action.set("Red")
 adress_add_action = ctk.CTkEntry(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", width=200, textvariable=adress_new_action, placeholder_text="Adress", font=("Monospace", 18))
 adress_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Adress", font=("Monospace", 15))
 query_add_action = ctk.CTkEntry(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", width=200, textvariable=query_new_action, placeholder_text="Search query", font=("Monospace", 18))
 query_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Search query", font=("Monospace", 15))
+path_add_action = ctk.CTkEntry(back_grounder, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", width=200, textvariable=path_new_action, placeholder_text="Path's file", font=("Monospace", 18))
+path_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Path's file", font=("Monospace", 15))
 button_add_action = ctk.CTkButton(back_grounder, border_width=2, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", hover_color="#1E1E1E", text="Add", font=("Monospace", 18), cursor="hand2", command=lb_add_new_action)
 name_add_action.bind("<KeyRelease>", lambda key: lb_show_placeholder(name_new_action, "Command's name", name_label, 269, 58))
 icon_add_action.bind("<KeyRelease>", lambda key: lb_show_placeholder(icon_new_action, "Icon's path", icon_label, 269, 95))
 adress_add_action.bind("<KeyRelease>", lambda key: lb_show_placeholder(adress_new_action, "Adress", adress_label, 269, 133))
 query_add_action.bind("<KeyRelease>", lambda key: lb_show_placeholder(query_new_action, "Search query", query_label, 269, 171))
+path_add_action.bind("<KeyRelease>", lambda key: lb_show_placeholder(path_new_action, "Path's file", path_label, 269, 133))
 label_remove_action = ctk.CTkLabel(back_grounder, fg_color="#1E1E1E", text_color="#ffffff", corner_radius=10, text="------------Remove a command------------", font=("Monospace", 18))
 num_remove_action = ctk.CTkEntry(back_grounder, textvariable=num_delete_action, fg_color="#000000", text_color="#ffffff", border_color="#3C3C3C", width=200, placeholder_text="Adress", font=("Monospace", 18))
 num_label = ctk.CTkLabel(back_grounder, fg_color="#000000", text_color="#5A5A5A", width=10, height=10, text="Num", font=("Monospace", 15))
@@ -332,16 +342,18 @@ name_add_action.pack(pady=5)
 name_label.place(x=269, y=58)
 icon_add_action.pack(pady=5)
 icon_label.place(x=269, y=95)
-adress_add_action.pack(pady=5)
-query_add_action.pack(pady=5)
-adress_label.place(x=269, y=133)
-query_label.place(x=269, y=171)
-num_label.place(x=269, y=406)
+adress_add_action.pack_forget()
+adress_label.pack_forget()
+query_add_action.pack_forget()
+query_label.pack_forget()
+path_add_action.pack(pady=5)
+path_label.place(x=269, y=133)
 combo_add_action.pack(pady=5)
 color_add_action.pack(pady=5)
 button_add_action.pack(pady=15)
 label_remove_action.pack(pady=10)
 num_remove_action.pack(pady=20)
+num_label.place(x=269, y=369)
 info_remove_action.pack()
 button_remove_action.pack(pady=10)
 
